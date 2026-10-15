@@ -1,0 +1,21 @@
+# Cluster apply uses dtb-agent-kit/k8s/mcp-channel-tools/outlook-mcp-main.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outlook-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: outlook-mcp
+  template:
+    metadata:
+      labels:
+        app: outlook-mcp
+    spec:
+      containers:
+        - name: outlook-mcp
+          image: outlook-mcp:local
+          ports:
+            - containerPort: 8000
