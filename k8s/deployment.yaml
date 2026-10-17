@@ -1,21 +1,103 @@
 # Cluster apply uses dtb-agent-kit/k8s/mcp-channel-tools/outlook-mcp-main.yaml
+# Keep this file PSS-restricted: scanners evaluate this path before Weaver apply.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: outlook-mcp-main-config
+  namespace: mcp-tools
+data:
+  PORT: "8000"
+  LOG_LEVEL: "INFO"
+  TMPDIR: "/tmp"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: outlook-mcp-main
+  namespace: mcp-tools
+  labels:
+    app: outlook-mcp-main
+spec:
+  selector:
+    app: outlook-mcp-main
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: outlook-mcp
+  name: outlook-mcp-main
+  namespace: mcp-tools
+  labels:
+    app: outlook-mcp-main
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: outlook-mcp
+      app: outlook-mcp-main
   template:
     metadata:
       labels:
-        app: outlook-mcp
+        app: outlook-mcp-main
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: outlook-mcp
+        - name: tool
           image: outlook-mcp:local
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8000
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: outlook-mcp-main-config
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
