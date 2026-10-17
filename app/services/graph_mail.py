@@ -23,6 +23,18 @@ def graph_message_url(message_id: str) -> str:
     return f"{GRAPH_BASE}/me/messages/{quote(message_id.strip(), safe='')}"
 
 
+def filter_unread_feed(items: list[dict], unread_only: bool) -> list[dict]:
+    """Drop rows Graph still marked is_read when unread_only was requested."""
+    if not unread_only:
+        return items
+    out: list[dict] = []
+    for item in items:
+        if isinstance(item, dict) and item.get("is_read") is True:
+            continue
+        out.append(item)
+    return out
+
+
 def parse_message_id_list(*values: Any) -> list[str]:
     out: list[str] = []
     seen: set[str] = set()
@@ -457,8 +469,16 @@ class GraphMailService:
             url = f"{GRAPH_BASE}/me/mailFolders/{folder_id.strip()}/messages"
         else:
             url = f"{GRAPH_BASE}/me/messages"
-        data = self._request("GET", url, params=params, extra_headers=extra)
+        try:
+            data = self._request("GET", url, params=params, extra_headers=extra)
+        except GraphError:
+            if unread_only and params.get("$orderby"):
+                params.pop("$orderby", None)
+                data = self._request("GET", url, params=params, extra_headers=extra)
+            else:
+                raise
         items = [summary_from_graph(x) for x in data.get("value") or []]
+        items = filter_unread_feed(items, unread_only)
         return items, skip_token_from_next_link(data.get("@odata.nextLink"))
 
     def mark_message_read(self, message_id: str) -> None:

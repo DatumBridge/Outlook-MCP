@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.services.graph_mail import (  # noqa: E402
+    filter_unread_feed,
     graph_message_url,
     parse_addresses,
     parse_message_id_list,
@@ -19,6 +20,15 @@ from app.services.graph_mail import (  # noqa: E402
 
 
 class MailShapeTest(unittest.TestCase):
+    def test_filter_unread_feed_drops_read(self):
+        rows = [
+            {"id": "a", "is_read": False},
+            {"id": "b", "is_read": True},
+            {"id": "c"},
+        ]
+        got = filter_unread_feed(rows, True)
+        self.assertEqual([r["id"] for r in got], ["a", "c"])
+
     def test_parse_message_id_list(self):
         self.assertEqual(parse_message_id_list("a,b"), ["a", "b"])
         self.assertEqual(parse_message_id_list([{"id": "x"}, {"message_id": "y"}]), ["x", "y"])
