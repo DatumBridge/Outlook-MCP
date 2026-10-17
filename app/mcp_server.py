@@ -11,7 +11,7 @@ Usage:
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from fastmcp import FastMCP
 from pydantic import Field
@@ -177,8 +177,8 @@ Outputs: success
 
 @mcp.tool()
 def mark_message_read(
-    message_id: Optional[str] = Field(default=None, description="Graph message id, comma-separated ids, or JSON array"),
-    message_ids: Optional[str] = Field(default=None, description="Comma-separated Graph ids, or JSON array"),
+    message_id: Any = Field(default=None, description="Graph message id, comma-separated ids, JSON array, or {id} rows"),
+    message_ids: Any = Field(default=None, description="Comma-separated Graph ids, JSON array, or {id} rows"),
     messages: Optional[list] = Field(default=None, description="Array of {id} rows from list_messages"),
     credentials_path: Optional[str] = _CREDS_PATH,
     credentials_json: Optional[str] = _CREDS_JSON,
@@ -193,7 +193,7 @@ Outputs: success
             return MarkReadResponse(success=False, error=_creds_required())
         ids = parse_message_id_list(message_id, message_ids, messages)
         if not ids:
-            return MarkReadResponse(success=False, error=_error_dict(GraphValidationError("message_id is required")))
+            return MarkReadResponse(success=True, message_id="", message="No messages to mark")
         service = _get_service(credentials_path, credentials_json)
         marked = service.mark_messages_read(ids)
         joined = ",".join(marked)
@@ -204,7 +204,7 @@ Outputs: success
 
 @mcp.tool()
 def mark_messages_read(
-    message_ids: Optional[str] = Field(default=None, description="Comma-separated Graph ids, or JSON array"),
+    message_ids: Any = Field(default=None, description="Comma-separated Graph ids, JSON array, or {id} rows"),
     messages: Optional[list] = Field(default=None, description="Array of {id} rows from list_messages"),
     credentials_path: Optional[str] = _CREDS_PATH,
     credentials_json: Optional[str] = _CREDS_JSON,
@@ -218,6 +218,8 @@ Outputs: success
         if not credentials_path and not credentials_json:
             return MarkReadResponse(success=False, error=_creds_required())
         ids = parse_message_id_list(message_ids, messages)
+        if not ids:
+            return MarkReadResponse(success=True, message_id="", message="No messages to mark")
         service = _get_service(credentials_path, credentials_json)
         marked = service.mark_messages_read(ids)
         joined = ",".join(marked)

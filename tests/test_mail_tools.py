@@ -36,6 +36,11 @@ class MailShapeTest(unittest.TestCase):
             parse_message_id_list("id-1,id-2", None, [{"id": "id-2"}, {"id": "id-3"}]),
             ["id-1", "id-2", "id-3"],
         )
+        self.assertEqual(parse_message_id_list(None, []), [])
+        self.assertEqual(
+            parse_message_id_list([{"id": "g", "body_preview": "xem n"}]),
+            ["g"],
+        )
 
     def test_graph_message_url_encodes_id(self):
         url = graph_message_url("AAMkAGI+abc=")

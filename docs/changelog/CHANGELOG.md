@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-18
+
+### Fixed
+
+- **`mark_messages_read` / `mark_message_read` accept `{id}` rows on `message_ids`.** FastMCP no longer rejects a list (Weaver Feeding Email bind). An empty page returns success and does not call Graph.
+
 ## 2026-10-17
 
 ### Changed
