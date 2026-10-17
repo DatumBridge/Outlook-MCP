@@ -10,13 +10,27 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.services.graph_mail import (  # noqa: E402
+    graph_message_url,
     parse_addresses,
+    parse_message_id_list,
     skip_token_from_next_link,
     summary_from_graph,
 )
 
 
 class MailShapeTest(unittest.TestCase):
+    def test_parse_message_id_list(self):
+        self.assertEqual(parse_message_id_list("a,b"), ["a", "b"])
+        self.assertEqual(parse_message_id_list([{"id": "x"}, {"message_id": "y"}]), ["x", "y"])
+        self.assertEqual(
+            parse_message_id_list("id-1,id-2", None, [{"id": "id-2"}, {"id": "id-3"}]),
+            ["id-1", "id-2", "id-3"],
+        )
+
+    def test_graph_message_url_encodes_id(self):
+        url = graph_message_url("AAMkAGI+abc=")
+        self.assertIn("/me/messages/AAMkAGI%2Babc%3D", url)
+
     def test_parse_addresses(self):
         self.assertEqual(parse_addresses("a@b.com, c@d.com"), ["a@b.com", "c@d.com"])
         self.assertEqual(parse_addresses(""), [])
@@ -49,6 +63,7 @@ class ToolGuardTest(unittest.TestCase):
         self.assertIn("if not confirm:", src)
         self.assertIn("Set confirm=true", src)
         self.assertIn("CREDENTIALS_REQUIRED", src)
+        self.assertIn("parse_message_id_list(message_id, message_ids, messages)", src)
 
     def test_send_paths_require_confirm_in_source(self):
         src = (ROOT / "app" / "mcp_server.py").read_text(encoding="utf-8")

@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 import requests
 
@@ -17,6 +17,47 @@ from app.core.exceptions import (
 )
 
 GRAPH_BASE = "https://graph.microsoft.com/v1.0"
+
+
+def graph_message_url(message_id: str) -> str:
+    return f"{GRAPH_BASE}/me/messages/{quote(message_id.strip(), safe='')}"
+
+
+def parse_message_id_list(*values: Any) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+
+    def add(raw: Any) -> None:
+        if raw is None:
+            return
+        if isinstance(raw, (list, tuple)):
+            for item in raw:
+                add(item)
+            return
+        if isinstance(raw, dict):
+            add(raw.get("id") or raw.get("message_id") or raw.get("messageId"))
+            return
+        text = str(raw).strip()
+        if not text:
+            return
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+                add(parsed)
+                return
+            except json.JSONDecodeError:
+                pass
+        for part in text.split(","):
+            mid = part.strip()
+            if mid and mid not in seen:
+                seen.add(mid)
+                out.append(mid)
+
+    for value in values:
+        add(value)
+    return out
+
+
 DEFAULT_SCOPES = (
     "openid",
     "profile",
@@ -426,9 +467,17 @@ class GraphMailService:
             raise GraphValidationError("message_id is required")
         self._request(
             "PATCH",
-            f"{GRAPH_BASE}/me/messages/{mid}",
+            graph_message_url(mid),
             json_body={"isRead": True},
         )
+
+    def mark_messages_read(self, message_ids: list[str]) -> list[str]:
+        ids = parse_message_id_list(message_ids)
+        if not ids:
+            raise GraphValidationError("message_ids is required")
+        for mid in ids:
+            self.mark_message_read(mid)
+        return ids
 
     def get_message(self, message_id: str) -> dict:
         mid = (message_id or "").strip()
@@ -436,7 +485,7 @@ class GraphMailService:
             raise GraphValidationError("message_id is required")
         data = self._request(
             "GET",
-            f"{GRAPH_BASE}/me/messages/{mid}",
+            graph_message_url(mid),
             params={"$select": FULL_SELECT},
         )
         return detail_from_graph(data)

@@ -4,11 +4,13 @@
 
 ### Changed
 
+- **`mark_messages_read`** marks a page of Graph ids after a Weaver catalog feed (array in, not foreach).
+- **Graph message URLs are encoded** so `mark_message_read` PATCH reaches ids that contain `+` or `=`.
 - **PSS-restricted pod.** Image and Deployment use UID/GID `10001`, non-root, no privilege escalation, read-only root, drop ALL caps, RuntimeDefault seccomp, CPU/memory requests and limits, namespace `mcp-tools`. Rebuild the image and re-apply `outlook-mcp-main.yaml`.
 
 ### Added
 
-- `mark_message_read` sets Graph `isRead` after a Weaver mail feed posts the message. Redeploy `outlook-mcp` and republish Outlook MCP / grant the tool. See BR-OUTLOOK-2.
+- `mark_message_read` sets Graph `isRead` after a Weaver mail feed posts the message. Redeploy `outlook-mcp` and republish Outlook MCP. See BR-OUTLOOK-2.
 
 ## 2026-10-14
 

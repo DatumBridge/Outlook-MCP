@@ -99,6 +99,22 @@ TOOLS = {
   }
 }""",
     },
+    "mark_messages_read": {
+        "summary": "Mark many messages as read (Graph isRead=true).",
+        "when": "Use after a mail feed posts a page of messages so the next unread poll does not list them again.",
+        "params": [
+            ("message_ids", "no", "string", "AAMkAGI,AAMkAGJ", "Comma-separated Graph ids or JSON array"),
+            ("messages", "no", "array", "[{id}]", "Rows from list_messages"),
+            ("credentials_path", "no", "string", "null", "Local token path. Gateway injects JSON instead."),
+            ("credentials_json", "no", "string", "null", "Injected OAuth bundle. Do not invent a token."),
+        ],
+        "input": '{"message_ids": "AAMkAGI,AAMkAGJ"}',
+        "output": """{
+  "success": true,
+  "message_id": "AAMkAGI,AAMkAGJ",
+  "message": "Messages marked as read"
+}""",
+    },
     "mark_message_read": {
         "summary": "Mark a message as read (Graph isRead=true).",
         "when": "Use after a mail feed posts this message so the next poll does not list it again.",

@@ -20,7 +20,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 
 from app.capability_bind import bind_declared_capabilities
-from app.core.exceptions import GraphError
+from app.core.exceptions import GraphError, GraphValidationError
 from app.schemas.mcp_models import (
     DraftListResponse,
     DraftResponse,
@@ -30,7 +30,7 @@ from app.schemas.mcp_models import (
     MessageResponse,
     SendMessageResponse,
 )
-from app.services.graph_mail import GraphMailService
+from app.services.graph_mail import GraphMailService, parse_message_id_list
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,7 @@ mcp = FastMCP(
     - list_messages — feed (subject, from, received, isRead, preview). No full body.
     - get_message — one message including body (truncated)
     - mark_message_read — set isRead after a feed posts the message
+    - mark_messages_read — set isRead on an array of ids after a feed page
     - send_message — send mail (confirm=true)
     - create_draft / list_drafts / get_draft / send_draft
     - reply_message — reply or reply-all (confirm=true)
@@ -176,11 +177,13 @@ Outputs: success
 
 @mcp.tool()
 def mark_message_read(
-    message_id: str = Field(description="Graph message id"),
+    message_id: Optional[str] = Field(default=None, description="Graph message id, comma-separated ids, or JSON array"),
+    message_ids: Optional[str] = Field(default=None, description="Comma-separated Graph ids, or JSON array"),
+    messages: Optional[list] = Field(default=None, description="Array of {id} rows from list_messages"),
     credentials_path: Optional[str] = _CREDS_PATH,
     credentials_json: Optional[str] = _CREDS_JSON,
 ) -> MarkReadResponse:
-    """Mark a message as read after it has been fed. Requires Mail.ReadWrite.
+    """Mark one or many messages as read after a feed. Requires Mail.ReadWrite.
 
         Capabilities: outlook.mark_message_read
 Outputs: success
@@ -188,9 +191,37 @@ Outputs: success
     try:
         if not credentials_path and not credentials_json:
             return MarkReadResponse(success=False, error=_creds_required())
+        ids = parse_message_id_list(message_id, message_ids, messages)
+        if not ids:
+            return MarkReadResponse(success=False, error=_error_dict(GraphValidationError("message_id is required")))
         service = _get_service(credentials_path, credentials_json)
-        service.mark_message_read(message_id)
-        return MarkReadResponse(success=True, message_id=message_id, message="Message marked as read")
+        marked = service.mark_messages_read(ids)
+        joined = ",".join(marked)
+        return MarkReadResponse(success=True, message_id=joined, message="Messages marked as read")
+    except GraphError as e:
+        return MarkReadResponse(success=False, error=_error_dict(e))
+
+
+@mcp.tool()
+def mark_messages_read(
+    message_ids: Optional[str] = Field(default=None, description="Comma-separated Graph ids, or JSON array"),
+    messages: Optional[list] = Field(default=None, description="Array of {id} rows from list_messages"),
+    credentials_path: Optional[str] = _CREDS_PATH,
+    credentials_json: Optional[str] = _CREDS_JSON,
+) -> MarkReadResponse:
+    """Mark many messages as read after a feed posts them. Requires Mail.ReadWrite.
+
+        Capabilities: outlook.mark_messages_read
+Outputs: success
+        """
+    try:
+        if not credentials_path and not credentials_json:
+            return MarkReadResponse(success=False, error=_creds_required())
+        ids = parse_message_id_list(message_ids, messages)
+        service = _get_service(credentials_path, credentials_json)
+        marked = service.mark_messages_read(ids)
+        joined = ",".join(marked)
+        return MarkReadResponse(success=True, message_id=joined, message="Messages marked as read")
     except GraphError as e:
         return MarkReadResponse(success=False, error=_error_dict(e))
 
