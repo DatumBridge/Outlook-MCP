@@ -21,3 +21,4 @@ Outlook mail is a **separate** MCP host and Azure app from `office365-mcp` (OneD
 
 - Combining Mail scopes into the files Azure app would expand consent blast radius. Do not merge.
 - `list_messages` must not return full bodies.
+- After a feed posts a message, `mark_message_read` must run so unread polls do not repeat it. Default folder is Inbox.

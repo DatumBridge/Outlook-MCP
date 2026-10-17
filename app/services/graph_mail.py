@@ -420,6 +420,16 @@ class GraphMailService:
         items = [summary_from_graph(x) for x in data.get("value") or []]
         return items, skip_token_from_next_link(data.get("@odata.nextLink"))
 
+    def mark_message_read(self, message_id: str) -> None:
+        mid = (message_id or "").strip()
+        if not mid:
+            raise GraphValidationError("message_id is required")
+        self._request(
+            "PATCH",
+            f"{GRAPH_BASE}/me/messages/{mid}",
+            json_body={"isRead": True},
+        )
+
     def get_message(self, message_id: str) -> dict:
         mid = (message_id or "").strip()
         if not mid:

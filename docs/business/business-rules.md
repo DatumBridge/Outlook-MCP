@@ -6,7 +6,7 @@ Outlook mail Connect is not Microsoft 365 files Connect. Operators register a se
 
 ## BR-OUTLOOK-2 — Feed vs body
 
-`list_messages` is a feed. Full body is only on `get_message` / `get_draft`, truncated.
+`list_messages` is a feed. Full body is only on `get_message` / `get_draft`, truncated. After Weaver posts a feed item, `mark_message_read` sets Graph `isRead` so the next unread poll does not list it again. Omit folder and the feed uses Inbox.
 
 ## BR-OUTLOOK-3 — Confirm send
 

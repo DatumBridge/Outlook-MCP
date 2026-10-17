@@ -99,6 +99,21 @@ TOOLS = {
   }
 }""",
     },
+    "mark_message_read": {
+        "summary": "Mark a message as read (Graph isRead=true).",
+        "when": "Use after a mail feed posts this message so the next poll does not list it again.",
+        "params": [
+            ("message_id", "yes", "string", "AAMkAGI", "Graph message id from list_messages"),
+            ("credentials_path", "no", "string", "null", "Local token path. Gateway injects JSON instead."),
+            ("credentials_json", "no", "string", "null", "Injected OAuth bundle. Do not invent a token."),
+        ],
+        "input": '{"message_id": "AAMkAGI"}',
+        "output": """{
+  "success": true,
+  "message_id": "AAMkAGI",
+  "message": "Message marked as read"
+}""",
+    },
     "send_message": {
         "summary": "Send mail. Requires confirm=true.",
         "when": "Use when the user explicitly asks to send. Do not send on a draft-only request.",

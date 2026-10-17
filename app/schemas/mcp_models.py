@@ -47,6 +47,11 @@ class SendMessageResponse(BaseToolResponse):
     message: Optional[str] = None
 
 
+class MarkReadResponse(BaseToolResponse):
+    message_id: Optional[str] = None
+    message: Optional[str] = None
+
+
 class DraftInfo(BaseModel):
     id: Optional[str] = None
     subject: Optional[str] = None

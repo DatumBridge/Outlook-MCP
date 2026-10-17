@@ -13,6 +13,7 @@ DatumBridge **tool-server** for **Outlook mail** via **Microsoft Graph**. Siblin
 | `list_folders` | Mailbox folders |
 | `list_messages` | Feed: subject, from, received, isRead, preview (no full body) |
 | `get_message` | One message including body (truncated) |
+| `mark_message_read` | Mark as read after a feed posts the message |
 | `send_message` | Send (`confirm=true`) |
 | `create_draft` | Create draft (does not send) |
 | `list_drafts` | List drafts |

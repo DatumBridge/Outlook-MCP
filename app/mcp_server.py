@@ -25,6 +25,7 @@ from app.schemas.mcp_models import (
     DraftListResponse,
     DraftResponse,
     FolderListResponse,
+    MarkReadResponse,
     MessageListResponse,
     MessageResponse,
     SendMessageResponse,
@@ -41,6 +42,7 @@ mcp = FastMCP(
     - list_folders — mailbox folders
     - list_messages — feed (subject, from, received, isRead, preview). No full body.
     - get_message — one message including body (truncated)
+    - mark_message_read — set isRead after a feed posts the message
     - send_message — send mail (confirm=true)
     - create_draft / list_drafts / get_draft / send_draft
     - reply_message — reply or reply-all (confirm=true)
@@ -170,6 +172,27 @@ Outputs: success
         return MessageResponse(success=True, message=service.get_message(message_id))
     except GraphError as e:
         return MessageResponse(success=False, error=_error_dict(e))
+
+
+@mcp.tool()
+def mark_message_read(
+    message_id: str = Field(description="Graph message id"),
+    credentials_path: Optional[str] = _CREDS_PATH,
+    credentials_json: Optional[str] = _CREDS_JSON,
+) -> MarkReadResponse:
+    """Mark a message as read after it has been fed. Requires Mail.ReadWrite.
+
+        Capabilities: outlook.mark_message_read
+Outputs: success
+        """
+    try:
+        if not credentials_path and not credentials_json:
+            return MarkReadResponse(success=False, error=_creds_required())
+        service = _get_service(credentials_path, credentials_json)
+        service.mark_message_read(message_id)
+        return MarkReadResponse(success=True, message_id=message_id, message="Message marked as read")
+    except GraphError as e:
+        return MarkReadResponse(success=False, error=_error_dict(e))
 
 
 @mcp.tool()
